@@ -7,7 +7,8 @@ const STORE = {
     {id: cuid(), name: "milk", checked: true},
     {id: cuid(), name: "bread", checked: false}
   ],
-  hideCompleted: false
+  hideCompleted: false,
+  filterTerm: null
 };
 
 function generateItemElement(item) {
@@ -21,11 +22,12 @@ function generateItemElement(item) {
         <button class="shopping-item-delete js-item-delete">
             <span class="button-label">delete</span>
         </button>
-        <form id="js-edit-name-form">
+        <form class="js-edit-name-form">
             <label for="item-edit">Change Item Name: </label>
             <input type="text" name="item-edit" class="js-item-edit" placeholder="New Name">
-          </form>
-          <button class = "js-edit">Change Name</button>
+            <button type='submit' class = "js-edit">Change Name</button>
+            </form>
+          
       </div>
     </li>`;
 }
@@ -54,6 +56,11 @@ function renderShoppingList() {
   // where ONLY items with a "checked" property of false are included
   if (STORE.hideCompleted) {
     filteredItems = filteredItems.filter(item => !item.checked);
+  }
+
+  if (STORE.filterTerm){
+    console.log('filter term exists');
+    filteredItems = filteredItems.filter(item => item.name.includes(STORE.filterTerm));
   }
 
   // at this point, all filtering work has been done (or not done, if that's the current settings), so
@@ -147,23 +154,57 @@ function handleToggleHideFilter() {
 //Edits STORE.items.name property of an item. (Takes in new name)
 function editItemName(itemId, newName){
   console.log("Editing name for item with id " + itemId);
+  //references one item with the given id in the STORE
   const item = STORE.items.find(item => item.id === itemId);
+  //Setting the item name property to the new name.
   item.name = newName;
 }
 
 //listens for a submit on a form in our list and takes that input and changes the current input
 function handleEditItemName() {
-  console.log("handled");
-  $('.js-shopping-list').on('click','.js-edit', function(){
-    //event.preventDefault();
+  //Listening for a submit on my new form to change the item name
+  $('.js-shopping-list').on('submit','.js-edit-name-form', function(){
+    event.preventDefault();
+    //get the id to find it in the STORE
     let id = getItemIdFromElement($(this));
+    //grabbing the user input from the form
     let userInput = $(this).closest('li').find('input').val();
     $(this).closest('li').find('input').val('');
-    console.log(userInput);
-    console.log(id);
+    //editting the item in STORE
     editItemName(id, userInput);
+    //Render the list
     renderShoppingList();   
   });
+}
+
+//function that changes the filter term in the STORE 
+function filterItems(term){
+  //changing the term I filter by in my STORE
+  STORE.filterTerm = term;
+}
+
+function handleFilterItems() {
+  //Listens for the filter form to submit
+  $('#js-filter-form').submit(function(event) {
+    event.preventDefault();
+    //sets my filter term to the term in the filter form
+    const filterTerm = $('.js-shopping-list-filter').val();
+    $('.js-shopping-list-filter').val('');
+    //see function above
+    filterItems(filterTerm);
+    renderShoppingList();
+  });
+  //Clears my filter, by litening for clirks on the clear filter button I created
+  //and setting my filterTerm in my STORE to an empty string;
+  $('#js-filter-form').on('click','.clear',function(event) {
+    event.preventDefault();
+    const filterTerm = '';
+    $('.js-shopping-list-filter').val('');
+    //see function above
+    filterItems(filterTerm);
+    renderShoppingList();
+  });
+
 }
 
 // this function will be our callback when the page loads. it's responsible for
@@ -177,6 +218,7 @@ function handleShoppingList() {
   handleDeleteItemClicked();
   handleToggleHideFilter();
   handleEditItemName();
+  handleFilterItems();
 }
 
 // when the page loads, call `handleShoppingList`
